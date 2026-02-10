@@ -12,9 +12,9 @@ struct CueSheet {
 struct Track {
     number: u8, // must be between 1 and 99
     track_type: TrackType,
-    pregap: Option<Index>, // TODO: implement INDEX 00
+    pregap: Option<Index>,
     index_01: Index,
-    additional_indexes: Option<Vec<(u8, Index)>>, // indexes from 02 to more but it's pretty rare
+    additional_indexes: Option<Vec<(u8, Index)>>, // other indexes from 02 to more but it's pretty rare, also INDEX 00.
     flags: Option<Vec<Flags>>,
     metadata: Metadata,
     postgap: Option<Index>,
