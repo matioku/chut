@@ -13,9 +13,11 @@ struct Track {
     number: u8, // must be between 1 and 99
     track_type: TrackType,
     pregap: Option<Index>,
+    index_00: Option<Index>,
     index_01: Index,
-    additional_indexes: Option<Vec<(u8, Index)>>, // other indexes from 02 to more but it's pretty rare, also INDEX 00.
-    flags: Option<Vec<Flags>>,
+    additional_indexes: Vec<(u8, TrackIndex)>, // other indexes from 02 to more but it's pretty rare
+    flags: Vec<Flags>,
+    isrc: Option<String>,
     metadata: Metadata,
     postgap: Option<Index>,
 }
@@ -46,7 +48,6 @@ struct FileEntry {
 /// - `composer`: Name(s) of the composer(s).
 /// - `disc_id`: Disc Identification information.
 /// - `genre`: Genre Identification and Genre information.
-/// - `isrc`: ISRC Code of each track.
 /// - `message`: Message from the content provider and/or artist.
 /// - `performer`: Name(s) of the performer(s).
 /// - `songwriter`: Name(s) of the songwriter(s).
@@ -61,8 +62,6 @@ struct Metadata {
     disc_id: Option<String>,
     /// Genre Identification and Genre information.
     genre: Option<String>,
-    /// ISRC Code of each track.
-    isrc: Option<String>,
     /// Message from the content provider and/or artist.
     message: Option<String>,
     /// Name(s) of the performer(s).

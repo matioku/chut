@@ -11,6 +11,7 @@ Here are the links that i used a lot to see the description of Cue sheets :
 - https://web.archive.org/web/20070614044112/http://www.goldenhawk.com/download/cdrwin.pdf
 - https://wyday.com/cuesharp/specification.php
 - https://totalsonic.net/cuesheetsyntax.htm
+- https://github.com/libyal/libodraw/blob/main/documentation/CUE%20sheet%20format.asciidoc
 
 # Special thanks
-I used the code of [OCue](https://codeberg.org/EruEri/ocue) a lot, so a huge thanks to its contributors and condor who sent me this.
+I inspired myself with the code of [OCue](https://codeberg.org/EruEri/ocue) a lot, so a huge thanks to its contributors and condor who sent me this.
