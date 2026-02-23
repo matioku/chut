@@ -2,24 +2,24 @@ use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
 struct CueSheet {
+    catalog: Option<String>, // must be a numeric value of 13 digits and encoded according to UPC/EAN (Universal Product Code/European Article Number) rules. Appear only once
+    cd_text_file: Option<String>, // must be enclosed in quotations marks if it contains spaces
     metadata: Metadata,
     files: Vec<FileEntry>, // a cue file can reference more than one files
-    cd_text_file: Option<String>,
-    catalog: Option<String>,
 }
 
 #[derive(Debug, PartialEq)]
 struct Track {
     number: u8, // must be between 1 and 99
     track_type: TrackType,
-    pregap: Option<Index>,
+    pregap: Option<Index>, // must appear after a TRACK command, but before any INDEX commands. Only one PREGAP command is allowed per track.
     index_00: Option<Index>,
     index_01: Index,
     additional_indexes: Vec<(u8, TrackIndex)>, // other indexes from 02 to more but it's pretty rare
     flags: Vec<Flags>,
-    isrc: Option<String>,
+    isrc: Option<String>, // used to specify the International Standard Recording Code (ISRC) of a trackused to specify the International Standard Recording Code (ISRC) of a track, typically used for commercial CDs
     metadata: Metadata,
-    postgap: Option<Index>,
+    postgap: Option<Index>, // considered not to be stored in the file specified by the FILE command
 }
 
 #[derive(Debug, PartialEq)]
@@ -43,7 +43,7 @@ struct FileEntry {
 }
 
 #[derive(Debug, PartialEq)]
-/// Other fields and commands as specified by https://www.gnu.org/software/ccd2cue/manual/html_node/CUE-sheet-format.html,
+/// Other fields and commands as specified by https://www.gnu.org/software/ccd2cue/manual/html_node/CUE-sheet-format.html, All strings should be limited to 80 chars.
 /// - `arranger`: Name(s) of the arranger(s).
 /// - `composer`: Name(s) of the composer(s).
 /// - `disc_id`: Disc Identification information.
