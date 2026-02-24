@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct CueSheet {
     catalog: Option<String>, // must be a numeric value of 13 digits and encoded according to UPC/EAN (Universal Product Code/European Article Number) rules. Appear only once
     cd_text_file: Option<String>, // must be enclosed in quotations marks if it contains spaces
@@ -8,41 +8,41 @@ struct CueSheet {
     files: Vec<FileEntry>, // a cue file can reference more than one files
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct Track {
     number: u8, // must be between 1 and 99
     track_type: TrackType,
     pregap: Option<Index>, // must appear after a TRACK command, but before any INDEX commands. Only one PREGAP command is allowed per track.
     index_00: Option<Index>,
     index_01: Index,
-    additional_indexes: Vec<(u8, TrackIndex)>, // other indexes from 02 to more but it's pretty rare
+    additional_indexes: Vec<TrackIndex>, // other indexes from 02 to more but it's pretty rare
     flags: Vec<Flags>,
     isrc: Option<String>, // used to specify the International Standard Recording Code (ISRC) of a trackused to specify the International Standard Recording Code (ISRC) of a track, typically used for commercial CDs
     metadata: Metadata,
     postgap: Option<Index>, // considered not to be stored in the file specified by the FILE command
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 struct TrackIndex {
     number: u8,
     index: Index,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 struct Index {
     minute: u8,
     second: u8,
     frame: u8, // there are 75 frames per second, so 1 frame is 1/75 of a second
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct FileEntry {
     file_name: String,
     file_type: FileType,
     tracks: Vec<Track>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 /// Other fields and commands as specified by https://www.gnu.org/software/ccd2cue/manual/html_node/CUE-sheet-format.html, All strings should be limited to 80 chars.
 /// - `arranger`: Name(s) of the arranger(s).
 /// - `composer`: Name(s) of the composer(s).
@@ -71,10 +71,10 @@ struct Metadata {
     /// Title of album name or Track Titles.
     title: Option<String>,
     /// Additional REM comments, such as `DATE` for example.
-    other_rem: Option<HashMap<String, String>>,
+    other_rem: HashMap<String, String>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 /// Track special sub-code flags, rarely used today.
 ///
 /// | Value | Description |
@@ -90,7 +90,7 @@ enum Flags {
     SCMS,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 /// Track data modes, as defined in [ccd2cue manual](https://www.gnu.org/software/ccd2cue/manual/html_node/MODE-_0028Compact-Disc-fields_0029.html#MODE-_0028Compact-Disc-fields_0029).
 ///
 /// *Note: The modes marked with ‘\*’ are not defined in the original CUE sheet format specification.*
@@ -120,7 +120,7 @@ enum TrackType {
     CDI_2352,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 enum FileType {
     Binary,
     Motorola,
