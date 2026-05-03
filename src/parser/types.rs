@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 /// Represents a complete CUE sheet file structure.
 ///
 /// A CUE sheet describes the layout of tracks on a CD or disc image. It contains
@@ -11,13 +9,14 @@ use std::collections::HashMap;
 ///
 /// # Examples
 /// ```
-/// # use cue_parser::*;
+/// # use chut::*;
 /// let cue = CueSheet {
 ///     catalog: Some("1234567890123".to_string()),
 ///     cd_text_file: None,
 ///     metadata: Metadata::default(),
 ///     files: vec![],
 /// };
+/// ```
 #[derive(Debug, PartialEq, Clone)]
 struct CueSheet {
     /// UPC/EAN catalog number (13 numeric digits).
@@ -121,10 +120,11 @@ pub struct Track {
     /// Optional subdivision points within a track. These are rarely used but can mark
     /// movements in classical music, sections in DJ sets, or chapters in long recordings.
     ///
-    /// Index numbers must be sequential and greater than 1 (2, 3, 4, ...).
+    /// Each entry is `(index_number, position)`. Index numbers must be sequential
+    /// and greater than 1 (2, 3, 4, ...).
     ///
     /// Most tracks have zero additional indexes.
-    additional_indexes: Vec<TrackIndex>,
+    additional_indexes: Vec<(u8, Index)>,
     /// Track sub-code flags.
     ///
     /// Specifies special CD sub-code flags for this track. Rarely used in modern CUE sheets.
@@ -170,28 +170,6 @@ pub struct Track {
     postgap: Option<Index>,
 }
 
-/// An index point within a track (INDEX command).
-///
-/// Represents a specific `INDEX` command within a track. Indexes mark positions
-/// in the audio file using the format `MM:SS:FF` (minutes:seconds:frames).
-///
-/// - `INDEX 00`: Pregap start (optional)
-/// - `INDEX 01`: Track start (mandatory)
-/// - `INDEX 02+`: Sub-divisions (optional, rare)
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct TrackIndex {
-    /// Index number (0, 1, 2, 3, ...).
-    ///
-    /// - `0`: Pregap start
-    /// - `1`: Track start (mandatory)
-    /// - `2+`: Additional sub-indexes
-    number: u8,
-    /// Position in the file where this index points.
-    ///
-    /// Absolute time position using the format `MM:SS:FF`.
-    index: Index,
-}
-
 /// A time position in the format MM:SS:FF (minutes:seconds:frames).
 ///
 /// Represents an absolute position in an audio file. The format is:
@@ -206,7 +184,7 @@ pub struct TrackIndex {
 ///
 /// # Examples
 /// ```
-/// # use cue_parser::Index;
+/// # use chut::parser::types::Index;
 /// // 3 minutes, 30 seconds, 0 frames = 3:30.000
 /// let idx = Index { minute: 3, second: 30, frame: 0 };
 ///
@@ -329,9 +307,11 @@ pub struct Metadata {
     pub title: Option<String>,
     /// Additional REM comments not covered by standard fields.
     ///
-    /// Stores custom `REM` comments as key-value pairs.
+    /// Stores custom `REM` comments as `(key, value)` pairs in source order.
+    /// Using a `Vec` (rather than a map) preserves insertion order and allows
+    /// duplicate keys, both of which can occur in real CUE sheets.
     ///
-    /// Common examples:
+    /// Common keys:
     /// - `DATE`: Release year or date (`REM DATE 2023`)
     /// - `COMMENT`: Arbitrary comments (`REM COMMENT "Remastered edition"`)
     /// - `DISCNUMBER`: Disc number in multi-disc sets
@@ -343,12 +323,12 @@ pub struct Metadata {
     /// ```
     /// Results in:
     /// ```
-    /// # use std::collections::HashMap;
-    /// let mut map = HashMap::new();
-    /// map.insert("DATE".to_string(), "2023".to_string());
-    /// map.insert("COMMENT".to_string(), "Remastered".to_string());
+    /// let rem = vec![
+    ///     ("DATE".to_string(), "2023".to_string()),
+    ///     ("COMMENT".to_string(), "Remastered".to_string()),
+    /// ];
     /// ```
-    pub other_rem: HashMap<String, String>,
+    pub other_rem: Vec<(String, String)>,
 }
 
 /// Track sub-code flags (FLAGS command).
@@ -421,43 +401,46 @@ pub enum TrackType {
     /// CD-ROM Mode 1 Data, cooked (2048 bytes per sector).
     ///
     /// Standard CD-ROM data mode. Only user data, no error correction or headers.
-    /// Most common data track type.
-    Mode1_2048,
+    /// Most common data track type. CUE keyword: `MODE1/2048`.
+    Mode1Cooked,
     /// CD-ROM Mode 1 Data, raw (2352 bytes per sector).
     ///
     /// Full raw sector including sync, headers, user data, and error correction (ECC/EDC).
-    Mode1_2352,
-    /// CD-ROM XA Mode 2 Data, form 1 (2048 bytes per sector). *
+    /// CUE keyword: `MODE1/2352`.
+    Mode1Raw,
+    /// CD-ROM XA Mode 2, Form 1 (2048 bytes per sector).
     ///
     /// CD-ROM XA (eXtended Architecture) Mode 2, Form 1.
-    /// User data only, similar to Mode1/2048.
+    /// User data only, similar to `Mode1Cooked`.
+    /// CUE keyword: `MODE2/2048`.
     ///
     /// *Extension: Not in original CDRWIN specification.*
-    Mode2_2048,
-    /// CD-ROM XA Mode 2 Data, form 2 (2324 bytes per sector). *
+    Mode2Form1,
+    /// CD-ROM XA Mode 2, Form 2 (2324 bytes per sector).
     ///
-    /// CD-ROM XA Mode 2, Form 2.
     /// More user data, less error correction (used for video/audio streams).
+    /// CUE keyword: `MODE2/2324`.
     ///
     /// *Extension: Not in original CDRWIN specification.*
-    Mode2_2324,
-    /// CD-ROM XA Mode 2 Data, form mix (2336 bytes per sector).
+    Mode2Form2,
+    /// CD-ROM XA Mode 2, mixed forms (2336 bytes per sector).
     ///
-    /// CD-ROM XA Mode 2 with mixed forms (Form 1 and Form 2 sectors).
+    /// CD-ROM XA Mode 2 with interleaved Form 1 and Form 2 sectors.
     /// Contains sub-header and user data, no sync/header.
-    Mode2_2336,
+    /// CUE keyword: `MODE2/2336`.
+    Mode2Mixed,
     /// CD-ROM XA Mode 2 Data, raw (2352 bytes per sector).
     ///
-    /// Full raw Mode 2 XA sector.
-    Mode2_2352,
+    /// Full raw Mode 2 XA sector. CUE keyword: `MODE2/2352`.
+    Mode2Raw,
     /// CD-i Mode 2 Data (2336 bytes per sector).
     ///
-    /// Philips CD-i (Compact Disc Interactive) format.
-    Cdi2336,
+    /// Philips CD-i (Compact Disc Interactive) format. CUE keyword: `CDI/2336`.
+    CdiMode2,
     /// CD-i Mode 2 Data, raw (2352 bytes per sector).
     ///
-    /// Full raw CD-i sector.
-    Cdi2352,
+    /// Full raw CD-i sector. CUE keyword: `CDI/2352`.
+    CdiMode2Raw,
 }
 
 /// File format type (FILE command second parameter).
