@@ -1,9 +1,7 @@
-mod types;
-
 use nom::{
-    IResult, Parser,
-    bytes::complete::{tag, take_while_m_n},
-    combinator::map_res,
+    bytes::complete::{tag, take_while_m_n}, combinator::map_res,
+    IResult,
+    Parser,
 };
 
 #[derive(Debug, PartialEq)]

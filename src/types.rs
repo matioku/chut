@@ -184,7 +184,7 @@ pub struct Track {
 ///
 /// # Examples
 /// ```
-/// # use chut::parser::types::Index;
+/// # use chut::types::Index;
 /// // 3 minutes, 30 seconds, 0 frames = 3:30.000
 /// let idx = Index { minute: 3, second: 30, frame: 0 };
 ///
